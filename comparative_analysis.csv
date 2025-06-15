@@ -1,0 +1,5 @@
+Tipo de Mutação,Taxa de Convergência,Média de Iterações para Convergência,Desvio Padrão das Iterações,Fitness Médio Final,Desvio Padrão do Fitness Final,Média de Indivíduos Convergidos por Execução,Iteração Média para Primeira Convergência
+swap,18/30 (60.0%),39.94,90.70,0.40,0.49,5.07,10.50
+insertion,21/30 (70.0%),59.19,66.76,0.30,0.46,3.27,11.00
+inversion,29/30 (96.7%),46.69,132.88,0.03,0.18,7.53,10.50
+perturbation,30/30 (100.0%),140.37,232.54,0.00,0.00,3.80,12.50
