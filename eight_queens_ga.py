@@ -7,7 +7,7 @@ import numpy as np
 
 class EightQueensGA:
     def __init__(self):
-        self.population_size = 100
+        self.population_size = 10
         self.crossover_prob = 0.9
         self.mutation_prob = 0.4
         self.max_evaluations = 10000
