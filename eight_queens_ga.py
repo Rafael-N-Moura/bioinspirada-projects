@@ -2,10 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import List, Tuple
 import random
+from enum import Enum
+
+class MutationType(Enum):
+    SWAP = "swap"  # Troca de dois genes
+    INSERTION = "insertion"  # Inserção de um gene próximo a outro
+    INVERSION = "inversion"  # Inversão de uma sub-string
+    PERTURBATION = "perturbation"  # Rearranjo aleatório de um subconjunto
 
 class EightQueensGA:
-    def __init__(self):
-        self.population_size = 100
+    def __init__(self, mutation_type: MutationType = MutationType.SWAP):
+        self.population_size = 10
         self.crossover_prob = 0.9
         self.mutation_prob = 0.4
         self.max_evaluations = 10000
@@ -14,6 +21,7 @@ class EightQueensGA:
         self.fitness_history = []
         self.best_fitness_history = []
         self.evaluations = 0
+        self.mutation_type = mutation_type
 
     def initialize_population(self):
         """Inicializa a população com permutações aleatórias."""
@@ -60,11 +68,69 @@ class EightQueensGA:
         child2 = create_child(parent2, parent1, point)
         return child1, child2
 
-    def mutate(self, individual: List[int]) -> List[int]:
-        """Realiza mutação trocando dois genes aleatórios."""
+    def mutate_swap(self, individual: List[int]) -> List[int]:
+        """
+        Mutação por troca: dois genes são escolhidos aleatoriamente e suas posições são trocadas.
+        Este operador preserva a maior parte da adjacência da informação.
+        Esperado: Boa preservação de padrões locais, mas pode ser limitado em explorar novas configurações.
+        """
         if random.random() < self.mutation_prob:
             idx1, idx2 = random.sample(range(len(individual)), 2)
             individual[idx1], individual[idx2] = individual[idx2], individual[idx1]
+        return individual
+
+    def mutate_insertion(self, individual: List[int]) -> List[int]:
+        """
+        Mutação por inserção: dois genes são escolhidos aleatoriamente, o segundo é movido para próximo do primeiro.
+        Este operador preserva a maior parte da ordem da informação adjacente.
+        Esperado: Melhor preservação de sequências ordenadas, útil quando a ordem relativa dos genes é importante.
+        """
+        if random.random() < self.mutation_prob:
+            idx1, idx2 = random.sample(range(len(individual)), 2)
+            gene = individual.pop(idx2)
+            # Insere o gene próximo ao primeiro índice escolhido
+            insert_pos = (idx1 + 1) % len(individual)
+            individual.insert(insert_pos, gene)
+        return individual
+
+    def mutate_inversion(self, individual: List[int]) -> List[int]:
+        """
+        Mutação por inversão: dois genes são escolhidos aleatoriamente e a sub-string entre eles é invertida.
+        Este operador preserva a adjacência da informação, mas modifica a ordem.
+        Esperado: Bom para explorar novas configurações mantendo conexões locais, útil para quebrar padrões rígidos.
+        """
+        if random.random() < self.mutation_prob:
+            idx1, idx2 = sorted(random.sample(range(len(individual)), 2))
+            individual[idx1:idx2+1] = reversed(individual[idx1:idx2+1])
+        return individual
+
+    def mutate_perturbation(self, individual: List[int]) -> List[int]:
+        """
+        Mutação por perturbação: um subconjunto de genes é escolhido aleatoriamente e rearranjado.
+        Este operador permite mudanças mais drásticas na configuração.
+        Esperado: Maior exploração do espaço de busca, mas pode perder boas características locais.
+        """
+        if random.random() < self.mutation_prob:
+            # Escolhe um subconjunto aleatório de genes
+            subset_size = random.randint(2, len(individual) // 2)
+            subset_indices = random.sample(range(len(individual)), subset_size)
+            subset = [individual[i] for i in subset_indices]
+            random.shuffle(subset)
+            # Recoloca os genes rearranjados
+            for i, idx in enumerate(subset_indices):
+                individual[idx] = subset[i]
+        return individual
+
+    def mutate(self, individual: List[int]) -> List[int]:
+        """Aplica a mutação selecionada ao indivíduo."""
+        if self.mutation_type == MutationType.SWAP:
+            return self.mutate_swap(individual)
+        elif self.mutation_type == MutationType.INSERTION:
+            return self.mutate_insertion(individual)
+        elif self.mutation_type == MutationType.INVERSION:
+            return self.mutate_inversion(individual)
+        elif self.mutation_type == MutationType.PERTURBATION:
+            return self.mutate_perturbation(individual)
         return individual
 
     def select_survivors(self, offspring: List[List[int]]) -> None:
@@ -108,15 +174,15 @@ class EightQueensGA:
 
         return False, iteration, self.fitness_history, self.best_fitness_history
 
-def run_experiment(num_runs: int = 30) -> None:
+def run_experiment(mutation_type: MutationType, num_runs: int = 30) -> None:
     """Executa o experimento múltiplas vezes e coleta estatísticas."""
     converged_runs = 0
     iterations_to_converge = []
     final_fitness_values = []
 
     for run in range(num_runs):
-        print(f"Executando experimento {run + 1}/{num_runs}")
-        ga = EightQueensGA()
+        print(f"Executando experimento {run + 1}/{num_runs} com mutação {mutation_type.value}")
+        ga = EightQueensGA(mutation_type)
         converged, iterations, _, _ = ga.run()
         
         if converged:
@@ -127,7 +193,7 @@ def run_experiment(num_runs: int = 30) -> None:
         final_fitness_values.append(final_fitness)
 
     # Análise dos resultados
-    print("\nResultados do experimento:")
+    print(f"\nResultados do experimento com mutação {mutation_type.value}:")
     print(f"Número de execuções que convergiram: {converged_runs}/{num_runs}")
     if iterations_to_converge:
         print(f"Média de iterações para convergência: {np.mean(iterations_to_converge):.2f}")
@@ -142,10 +208,12 @@ def run_experiment(num_runs: int = 30) -> None:
     plt.plot(ga.best_fitness_history, label='Melhor Fitness')
     plt.xlabel('Iteração')
     plt.ylabel('Fitness')
-    plt.title('Convergência do Algoritmo')
+    plt.title(f'Convergência do Algoritmo - Mutação {mutation_type.value}')
     plt.legend()
     plt.grid(True)
     plt.show()
 
 if __name__ == "__main__":
-    run_experiment() 
+    # Executa experimentos com diferentes tipos de mutação
+    for mutation_type in MutationType:
+        run_experiment(mutation_type) 
