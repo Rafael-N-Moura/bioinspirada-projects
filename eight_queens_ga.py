@@ -5,7 +5,7 @@ import random
 
 class EightQueensGA:
     def __init__(self):
-        self.population_size = 100
+        self.population_size = 10
         self.crossover_prob = 0.9
         self.mutation_prob = 0.4
         self.max_evaluations = 10000
@@ -34,10 +34,15 @@ class EightQueensGA:
         return conflicts
 
     def select_parents(self) -> Tuple[List[int], List[int]]:
-        """Seleciona dois pais usando o método de ranking."""
-        candidates = random.sample(self.population, 5)
-        candidates.sort(key=self.calculate_fitness)
-        return candidates[0], candidates[1]
+        """Seleciona dois pais usando o método de torneio."""
+        parents = []
+        for _ in range(2):
+            candidates = random.sample(self.population, 2)
+            if self.calculate_fitness(candidates[0]) > self.calculate_fitness(candidates[1]):
+                parents.append(candidates[0])
+            else:
+                parents.append(candidates[1])
+        return parents[0], parents[1]
 
     def crossover(self, parent1: List[int], parent2: List[int]) -> Tuple[List[int], List[int]]:
         """Realiza o crossover cut-and-crossfill."""
@@ -145,7 +150,7 @@ def run_experiment(num_runs: int = 30) -> None:
     plt.title('Convergência do Algoritmo')
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.savefig('figure')
 
 if __name__ == "__main__":
     run_experiment() 
